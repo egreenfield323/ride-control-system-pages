@@ -1,4 +1,29 @@
 .activity-log {
-  max-height: 220px;
   overflow-y: auto;
+  min-height: 120px;
+}
+
+@media (min-width: 992px) {
+  .app-shell {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-row {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .main-row > [class*="col-"] {
+    height: 100%;
+  }
+
+  .queue-body {
+    min-height: 0;
+  }
+
+  .activity-log {
+    min-height: 0;
+  }
 }

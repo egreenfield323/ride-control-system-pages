@@ -1,19 +1,19 @@
 <template>
-  <div class="container-fluid py-3">
-    <div class="card mb-3">
+  <div class="container-fluid py-2 app-shell">
+    <div class="card mb-2">
       <div class="card-header">Vehicle Tracking</div>
-      <div class="card-body">
+      <div class="card-body py-2">
         <div class="d-flex gap-3 small mb-2">
           <span><span class="badge text-bg-success">&nbsp;</span> Occupied</span>
           <span><span class="badge text-bg-primary">&nbsp;</span> Loading dock</span>
           <span><span class="badge text-bg-light border">&nbsp;</span> Empty</span>
         </div>
 
-        <div class="row row-cols-2 row-cols-md-4 g-2 mb-3">
+        <div class="row row-cols-2 row-cols-md-4 row-cols-xl-8 g-2 mb-2">
           <div class="col" v-for="zone in blockZones" :key="zone.id">
             <div :class="['card h-100', {
-              'border-success': zone.vehicles.length > 0,
-              'border-primary': zone.id === 'loading'
+              'border-primary': zone.id === 'loading',
+              'border-success': zone.id !== 'loading' && zone.vehicles.length > 0
             }]">
               <div class="card-body p-2">
                 <div class="fw-bold">{{ zone.name }}</div>
@@ -29,14 +29,14 @@
       </div>
     </div>
 
-    <div class="row g-3">
+    <div class="row g-2 main-row">
       <div class="col-lg-4">
         <div class="card h-100">
           <div class="card-header">Ride Operations</div>
           <div class="card-body">
             <div :class="['alert py-2', rideStatusClass]">Status: {{ rideStatus }}</div>
 
-            <div class="d-grid gap-2 mb-3">
+            <div class="d-grid gap-2 mb-2">
               <button class="btn btn-success" @click="startRide" :disabled="rideStatus === 'RUNNING' || emergencyStop">Start</button>
               <button class="btn btn-secondary" @click="stopRide" :disabled="rideStatus === 'STOPPED'">Stop</button>
               <button class="btn btn-danger" @click="emergencyStopRide">Emergency stop</button>
@@ -84,7 +84,7 @@
       <div class="col-lg-4">
         <div class="card h-100">
           <div class="card-header">Queue and Capacity</div>
-          <div class="card-body">
+          <div class="card-body d-flex flex-column queue-body">
             <table class="table table-sm">
               <tbody>
                 <tr><td>Wait time</td><td class="text-end">{{ waitTime }} min</td></tr>
@@ -96,7 +96,7 @@
             </table>
 
             <h6>Activity log</h6>
-            <ul class="list-group list-group-flush small activity-log">
+            <ul class="list-group list-group-flush small activity-log flex-grow-1">
               <li class="list-group-item px-0 py-1" v-for="log in activityLog" :key="log.id">
                 <span class="text-muted">{{ log.timestamp }}</span> {{ log.message }}
               </li>
@@ -189,10 +189,8 @@ export default {
         condition: 'Clear',
         windSpeed: 8
       },
-      activityLog: [
-        { id: 1, message: 'System initialized - Ready for operation', timestamp: '14:23:15' }
-      ],
-      logCounter: 2,
+      activityLog: [],
+      logCounter: 1,
       vehicleMovementInterval: null
     }
   },

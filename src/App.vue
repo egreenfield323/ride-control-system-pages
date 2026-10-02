@@ -1,156 +1,106 @@
 <template>
-  <div class="main-container">
-    <!-- Vehicle Tracking Section -->
-    <div class="vehicle-tracking-section">
-      <h1 class="vehicle-tracking-header">🎢 Vehicle Tracking</h1>
+  <div class="container-fluid py-3">
+    <div class="card mb-3">
+      <div class="card-header">Vehicle Tracking</div>
+      <div class="card-body">
+        <div class="d-flex gap-3 small mb-2">
+          <span><span class="badge text-bg-success">&nbsp;</span> Occupied</span>
+          <span><span class="badge text-bg-primary">&nbsp;</span> Loading dock</span>
+          <span><span class="badge text-bg-light border">&nbsp;</span> Empty</span>
+        </div>
 
-      <div class="vehicle-legend">
-        <div class="legend-item">
-          <div class="legend-dot" style="background: #4caf50;"></div>
-          <span>Block Zone Occupied</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background: #2196f3;"></div>
-          <span>Loading Dock</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background: rgba(255, 255, 255, 0.2);"></div>
-          <span>Empty Zone</span>
-        </div>
-      </div>
-
-      <div class="block-zones">
-        <div v-for="zone in blockZones" :key="zone.id" :class="['block-zone', {
-          'occupied': zone.vehicles.length > 0,
-          'loading-dock': zone.id === 'loading'
-        }]">
-          <div class="block-zone-title">{{ zone.name }}</div>
-          <div class="vehicle-queue">
-            <div v-for="vehicle in zone.vehicles" :key="vehicle.id" class="vehicle">
-              {{ vehicle.name }}
+        <div class="row row-cols-2 row-cols-md-4 g-2 mb-3">
+          <div class="col" v-for="zone in blockZones" :key="zone.id">
+            <div :class="['card h-100', {
+              'border-success': zone.vehicles.length > 0,
+              'border-primary': zone.id === 'loading'
+            }]">
+              <div class="card-body p-2">
+                <div class="fw-bold">{{ zone.name }}</div>
+                <div class="small text-muted mb-1">{{ zone.vehicles.length }}/{{ zone.maxCapacity }}</div>
+                <div class="font-monospace small" v-for="vehicle in zone.vehicles" :key="vehicle.id">{{ vehicle.name }}</div>
+              </div>
             </div>
           </div>
-          <div v-if="zone.vehicles.length === 0" style="color: #666; font-size: 12px;">
-            Empty
-          </div>
         </div>
-      </div>
 
-      <div class="dispatch-controls">
-        <button class="btn-dispatch" @click="dispatchVehicle" :disabled="!canDispatch">
-          🚀 Dispatch Next Vehicle
-        </button>
-        <button class="btn-dispatch" @click="addVehicleToLoading" :disabled="totalVehicles >= maxVehicles"
-          style="background: linear-gradient(45deg, #9c27b0, #ba68c8);">
-          ➕ Add Vehicle to Loading
-        </button>
+        <button class="btn btn-primary me-2" @click="dispatchVehicle" :disabled="!canDispatch">Dispatch next vehicle</button>
+        <button class="btn btn-secondary" @click="addVehicleToLoading" :disabled="totalVehicles >= maxVehicles">Add vehicle to loading</button>
       </div>
     </div>
 
-    <div class="control-panel">
-      <!-- Ride Operations Section -->
-      <div class="section">
-        <h2>🎢 Ride Operations</h2>
+    <div class="row g-3">
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-header">Ride Operations</div>
+          <div class="card-body">
+            <div :class="['alert py-2', rideStatusClass]">Status: {{ rideStatus }}</div>
 
-        <div :class="['ride-status', rideStatusClass]">
-          <span :class="['status-indicator', rideStatusIndicator]"></span>
-          {{ rideStatus }}
-        </div>
+            <div class="d-grid gap-2 mb-3">
+              <button class="btn btn-success" @click="startRide" :disabled="rideStatus === 'RUNNING' || emergencyStop">Start</button>
+              <button class="btn btn-secondary" @click="stopRide" :disabled="rideStatus === 'STOPPED'">Stop</button>
+              <button class="btn btn-danger" @click="emergencyStopRide">Emergency stop</button>
+              <button class="btn btn-outline-secondary" @click="toggleMaintenance">
+                {{ maintenanceMode ? 'Exit maintenance' : 'Enter maintenance' }}
+              </button>
+              <button class="btn btn-outline-secondary" @click="resetSystem" :disabled="!emergencyStop && !maintenanceMode">Reset system</button>
+            </div>
 
-        <button class="control-button btn-start" @click="startRide"
-          :disabled="rideStatus === 'RUNNING' || emergencyStop">
-          Start Ride
-        </button>
-
-        <button class="control-button btn-stop" @click="stopRide" :disabled="rideStatus === 'STOPPED'">
-          Stop Ride
-        </button>
-
-        <button class="control-button btn-emergency" @click="emergencyStopRide">
-          🚨 EMERGENCY STOP
-        </button>
-
-        <button class="control-button btn-maintenance" @click="toggleMaintenance">
-          {{ maintenanceMode ? 'Exit Maintenance' : 'Enter Maintenance' }}
-        </button>
-
-        <button class="control-button btn-reset" @click="resetSystem" :disabled="!emergencyStop && !maintenanceMode">
-          Reset System
-        </button>
-
-        <div class="system-metrics">
-          <div class="metric">
-            <div class="metric-value">{{ cycleCount }}</div>
-            <div class="metric-label">Cycles Today</div>
-          </div>
-          <div class="metric">
-            <div class="metric-value">{{ guestsServed }}</div>
-            <div class="metric-label">Guests Served</div>
+            <table class="table table-sm mb-0">
+              <tbody>
+                <tr><td>Cycles today</td><td class="text-end">{{ cycleCount }}</td></tr>
+                <tr><td>Guests served</td><td class="text-end">{{ guestsServed }}</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      <!-- Safety & Monitoring Section -->
-      <div class="section">
-        <h2>🛡️ Safety & Monitoring</h2>
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-header">Safety</div>
+          <div class="card-body">
+            <h6>Safety systems</h6>
+            <table class="table table-sm">
+              <tbody>
+                <tr v-for="check in safetyChecks" :key="check.name">
+                  <td>{{ check.name }}</td>
+                  <td :class="['text-end', check.status ? 'text-success' : 'text-danger fw-bold']">{{ check.status ? 'OK' : 'FAULT' }}</td>
+                </tr>
+              </tbody>
+            </table>
 
-        <h3 style="color: #4fc3f7; margin: 15px 0 10px 0;">Safety Systems</h3>
-        <div class="safety-check" v-for="check in safetyChecks" :key="check.name">
-          <span>{{ check.name }}</span>
-          <span :class="['status-indicator', check.status ? 'status-operational' : 'status-critical']"></span>
-        </div>
-
-        <h3 style="color: #4fc3f7; margin: 15px 0 10px 0;">Weather Conditions</h3>
-        <div class="weather-info">
-          <div class="weather-temp">{{ weather.temperature.toFixed(2) }}°F</div>
-          <div>{{ weather.condition }}</div>
-          <div style="font-size: 12px; color: #9e9e9e;">
-            Wind: {{ weather.windSpeed.toFixed(2) }} mph | Humidity: {{ weather.humidity.toFixed(2) }}%
+            <h6>Weather</h6>
+            <table class="table table-sm mb-0">
+              <tbody>
+                <tr><td>Condition</td><td class="text-end">{{ weather.condition }}</td></tr>
+                <tr><td>Wind</td><td class="text-end">{{ weather.windSpeed.toFixed(1) }} mph</td></tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        <h3 style="color: #4fc3f7; margin: 15px 0 10px 0;">System Health</h3>
-        <div class="safety-check" v-for="system in systemHealth" :key="system.name">
-          <span>{{ system.name }}</span>
-          <span>{{ system.value }}</span>
         </div>
       </div>
 
-      <!-- Queue & Capacity Section -->
-      <div class="section">
-        <h2>👥 Queue & Capacity</h2>
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-header">Queue and Capacity</div>
+          <div class="card-body">
+            <table class="table table-sm">
+              <tbody>
+                <tr><td>Wait time</td><td class="text-end">{{ waitTime }} min</td></tr>
+                <tr><td>Queue length</td><td class="text-end">{{ queueLength }} guests</td></tr>
+                <tr><td>Vehicles in service</td><td class="text-end">{{ totalVehicles }}/{{ maxVehicles }}</td></tr>
+                <tr><td>Hourly capacity</td><td class="text-end">{{ hourlyCapacity }} guests/hr</td></tr>
+                <tr><td>Capacity utilization</td><td class="text-end">{{ capacityPercent }}%</td></tr>
+              </tbody>
+            </table>
 
-        <div class="queue-info">
-          <span>Current Wait Time:</span>
-          <span style="color: #4fc3f7; font-weight: bold;">{{ waitTime }} min</span>
-        </div>
-
-        <div class="queue-info">
-          <span>Queue Length:</span>
-          <span style="color: #4fc3f7; font-weight: bold;">{{ queueLength }} guests</span>
-        </div>
-
-        <div class="queue-info">
-          <span>Active Vehicles:</span>
-          <span style="color: #4fc3f7; font-weight: bold;">{{ totalVehicles }}/{{ maxVehicles }}</span>
-        </div>
-
-        <div class="queue-info">
-          <span>Hourly Capacity:</span>
-          <span style="color: #4fc3f7; font-weight: bold;">{{ hourlyCapacity }} guests/hr</span>
-        </div>
-
-        <h3 style="color: #4fc3f7; margin: 15px 0 10px 0;">Capacity Utilization</h3>
-        <div class="capacity-bar">
-          <div class="capacity-fill" :style="{ width: capacityPercent + '%' }"></div>
-        </div>
-        <div style="text-align: center; margin-top: 5px;">{{ capacityPercent }}%</div>
-
-        <h3 style="color: #4fc3f7; margin: 15px 0 10px 0;">Activity Log</h3>
-        <div style="max-height: 200px; overflow-y: auto;">
-          <div class="log-entry" v-for="log in activityLog" :key="log.id">
-            <div>{{ log.message }}</div>
-            <div class="log-timestamp">{{ log.timestamp }}</div>
+            <h6>Activity log</h6>
+            <ul class="list-group list-group-flush small activity-log">
+              <li class="list-group-item px-0 py-1" v-for="log in activityLog" :key="log.id">
+                <span class="text-muted">{{ log.timestamp }}</span> {{ log.message }}
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -233,23 +183,12 @@ export default {
       safetyChecks: [
         { name: 'Block Zone System', status: true },
         { name: 'Emergency Brakes', status: true },
-        { name: 'Restraint Systems', status: true },
-        { name: 'Height Sensors', status: true },
-        { name: 'Station Platforms', status: true },
-        { name: 'Fire Suppression', status: true }
+        { name: 'Restraint Systems', status: true }
       ],
       weather: {
-        temperature: 68,
-        condition: 'Partly Cloudy',
-        windSpeed: 8,
-        humidity: 65
+        condition: 'Clear',
+        windSpeed: 8
       },
-      systemHealth: [
-        { name: 'Motor Temperature', value: '165°F' },
-        { name: 'Hydraulic Pressure', value: '2400 PSI' },
-        { name: 'Power Consumption', value: '89 kW' },
-        { name: 'Vibration Level', value: 'Normal' }
-      ],
       activityLog: [
         { id: 1, message: 'System initialized - Ready for operation', timestamp: '14:23:15' }
       ],
@@ -260,10 +199,10 @@ export default {
   computed: {
     rideStatusClass() {
       switch (this.rideStatus) {
-        case 'RUNNING': return 'status-running';
-        case 'STOPPED': return 'status-stopped';
-        case 'MAINTENANCE': return 'status-maintenance-mode';
-        default: return 'status-stopped';
+        case 'RUNNING': return 'alert-success';
+        case 'STOPPED': return 'alert-danger';
+        case 'MAINTENANCE': return 'alert-warning';
+        default: return 'alert-danger';
       }
     },
     rideStatusIndicator() {
@@ -331,7 +270,7 @@ export default {
     emergencyStopRide() {
       this.rideStatus = 'STOPPED';
       this.emergencyStop = true;
-      this.addLog('🚨 EMERGENCY STOP ACTIVATED - All vehicles halted');
+      this.addLog('EMERGENCY STOP ACTIVATED - All vehicles halted');
       this.stopVehicleMovement();
       this.safetyChecks[1].status = false;
     },
@@ -460,20 +399,18 @@ export default {
     },
     updateWeather() {
       // simulate weather changes
-      this.weather.temperature += (Math.random() - 0.5) * 2;
       this.weather.windSpeed += (Math.random() - 0.5) * 3;
-      this.weather.humidity += (Math.random() - 0.5) * 5;
 
       // simulate rain
       if (Math.random() < 0.05) { // 5% chance of rain
         this.weather.condition = 'Rain';
         if (!this.rainAlertShown) {
           this.rainAlertShown = true;
-          this.addLog('⚠️ Weather alert: Rain detected. Prepare to shut down the ride.');
+          this.addLog('Weather alert: Rain detected. Prepare to shut down the ride.');
         }
       } else {
         this.rainAlertShown = false;
-        this.weather.condition = Math.random() < 0.5 ? 'Partly Cloudy' : 'Clear';
+        this.weather.condition = 'Clear';
       }
     }
 
@@ -487,14 +424,6 @@ export default {
         // simulate new guests entering queue
         const newGuests = Math.floor(Math.random() * 4) + 1; // 1–4 new guests per update
         this.queueLength += newGuests;
-
-        // randomly update system health (testing)
-        if (Math.random() < 0.1) {
-          const randomSystem = this.systemHealth[Math.floor(Math.random() * this.systemHealth.length)];
-          if (randomSystem.name === 'Motor Temperature') {
-            randomSystem.value = Math.floor(160 + Math.random() * 20) + '°F';
-          }
-        }
       }
     }, 5000); // queue increases every 5 seconds
 
